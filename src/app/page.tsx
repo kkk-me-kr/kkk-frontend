@@ -1,3 +1,9 @@
+import ChatContainer from "@/containers/ChatContainer";
+
 export default function Home() {
-  return <div>Hello World</div>;
+  return (
+    <div className="h-screen">
+      <ChatContainer />
+    </div>
+  );
 }
