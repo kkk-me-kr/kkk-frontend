@@ -1,8 +1,12 @@
-interface Chat {
-  turn: number;
-  content: string;
+interface Conversation {
+	id: string;
+	title?: string;
+	chats: Chat[];
+	createdAt: Date;
 }
 
-interface Question extends Chat {}
-
-interface Answer extends Chat {}
+interface Chat {
+	turn: number;
+	content: string;
+	subject: 'user' | 'assistant';
+}
