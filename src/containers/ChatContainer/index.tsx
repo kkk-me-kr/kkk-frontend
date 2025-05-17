@@ -1,84 +1,195 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ChatList from './ChatList';
 import ChatBox from './ChatBox';
 import ChatHeader from './ChatHeader';
 import ChatSideBar from './ChatSideBar';
+import {
+	createConversation,
+	fetchConversations,
+	fetchChats,
+	sendUserChat,
+} from '@/services/client/conversation.service';
+
+const USER_ID_KEY = 'chat_user_id';
+
+function getUserId(): string {
+	const userId = localStorage.getItem(USER_ID_KEY);
+	if (userId) return userId;
+
+	// 새 사용자 ID 생성 및 저장
+	const newUserId = crypto.randomUUID();
+	localStorage.setItem(USER_ID_KEY, newUserId);
+	return newUserId;
+}
 
 export default function ChatContainer() {
 	const [conversations, setConversations] = useState<Conversation[]>([]);
 	const [selectedConversationId, setSelectedConversationId] = useState<
 		string | null
 	>(null);
-	const [currentChatStatus, setCurrentChatStatus] = useState<
-		'idle' | 'loading' | 'error'
-	>('idle');
+	const [currentChatStatus, setCurrentChatStatus] = useState<{
+		status: 'idle' | 'loading' | 'error';
+		chat: Chat | null;
+	}>({
+		status: 'idle',
+		chat: null,
+	});
+
 	const selectedConversation = conversations.find(
 		conversation => conversation.id === selectedConversationId,
 	);
 
-	const doChat = (conversation: Conversation, message: string) => {
-		const userChatTurn = Math.max(
-			...conversation.chats
-				.filter(chat => chat.subject === 'user')
-				.map(chat => chat.turn),
-		);
-		const assistantChatTurn = Math.max(
-			...conversation.chats
-				.filter(chat => chat.subject === 'assistant')
-				.map(chat => chat.turn),
-		);
-		if (userChatTurn > assistantChatTurn) {
-			throw new Error('pending assistant chat is exists or something wrong');
-		}
-
-		const question: Chat = {
-			turn: userChatTurn + 1,
-			content: message,
-			subject: 'user',
+	// 대화 목록 조회
+	useEffect(() => {
+		const loadConversations = async () => {
+			try {
+				const userId = getUserId();
+				const response = await fetchConversations(userId);
+				setConversations(
+					response.map((conv, index) => ({
+						id: conv.id.toString(),
+						title: `${response.length - index}번째 대화`,
+						chats: [],
+						createdAt: conv.createdAt,
+					})),
+				);
+			} catch (error) {
+				console.error('Error loading conversations:', error);
+				setCurrentChatStatus({
+					status: 'error',
+					chat: null,
+				});
+			}
 		};
-		conversation.chats = [...conversation.chats, question];
 
-		setTimeout(() => {
-			const answer: Chat = {
-				turn: assistantChatTurn + 1,
-				content: '답변',
-				subject: 'assistant',
-			};
-			conversation.chats = [...conversation.chats, answer];
+		loadConversations();
+	}, []);
 
-			setCurrentChatStatus('idle');
-		}, 1000);
+	// 선택된 대화의 채팅 내역 조회
+	useEffect(() => {
+		const loadChats = async () => {
+			if (!selectedConversationId) return;
+			try {
+				const response = await fetchChats(selectedConversationId);
+				setConversations(prev =>
+					prev.map(conv =>
+						conv.id === selectedConversationId
+							? { ...conv, chats: response.chats }
+							: conv,
+					),
+				);
+				setCurrentChatStatus({
+					status: 'idle',
+					chat: null,
+				});
+			} catch (error) {
+				console.error('Error loading chats:', error);
+				setCurrentChatStatus({
+					status: 'error',
+					chat: null,
+				});
+			}
+		};
 
-		setCurrentChatStatus('loading');
-	};
+		loadChats();
+	}, [selectedConversationId]);
 
-	const handleChatSubmit = (message: string) => {
-		let conversation = selectedConversation;
-		if (!conversation) {
-			// TODO: 대화 생성 API 연동해야 합니다.
-			conversation = {
-				id: (conversations.length + 1).toString(),
-				title: '새로운 대화',
-				chats: [],
-				createdAt: new Date(),
-			};
-			setConversations([...conversations, conversation]);
-			setSelectedConversationId(conversation.id);
+	const handleChatSubmit = async (message: string) => {
+		try {
+			setCurrentChatStatus({
+				status: 'loading',
+				chat: {
+					turn:
+						selectedConversation?.chats.filter(chat => chat.subject === 'user')
+							.length ?? 0 + 1,
+					content: message,
+					subject: 'user',
+				},
+			});
+
+			const promise = new Promise(async resolve => {
+				let conversation = selectedConversation;
+				if (!conversation) {
+					// 새 대화 생성
+					const userId = getUserId();
+					const response = await createConversation(userId);
+					conversation = {
+						id: response.id.toString(),
+						title: `${conversations.length + 1}번째 대화`,
+						chats: [],
+						createdAt: response.createdAt,
+					};
+				}
+
+				// 서버에 메시지 전송
+				const response = await sendUserChat(conversation.id, message);
+				resolve({
+					conversation,
+					userChat: response.userChat,
+					assistantChat: response.assistantChat,
+				});
+			});
+			promise
+				.then(result => {
+					const { conversation, userChat, assistantChat } = result as {
+						conversation: Conversation;
+						userChat: Chat;
+						assistantChat: Chat;
+					};
+					setConversations(prev => [
+						...prev.filter(conv => conv.id !== conversation.id),
+						{
+							...conversation,
+							chats: [...conversation.chats, userChat, assistantChat],
+						},
+					]);
+					setSelectedConversationId(conversation.id);
+					setCurrentChatStatus({
+						status: 'idle',
+						chat: null,
+					});
+				})
+				.catch(error => {
+					console.error('Error sending chat:', error);
+					setCurrentChatStatus({
+						status: 'error',
+						chat: {
+							turn:
+								selectedConversation?.chats.filter(
+									chat => chat.subject === 'user',
+								).length ?? 0,
+							content: message,
+							subject: 'user',
+						},
+					});
+				});
+		} catch (error) {
+			console.error('Error sending chat:', error);
+			setCurrentChatStatus({
+				status: 'error',
+				chat: {
+					turn:
+						selectedConversation?.chats.filter(chat => chat.subject === 'user')
+							.length ?? 0,
+					content: message,
+					subject: 'user',
+				},
+			});
 		}
-		doChat(conversation, message);
 	};
 
 	const onNewConversationClick = () => {
-		// NOTE: 채팅 하지 않을 것이라면, 대화를 생성할 필요가 없기에, null 처리만 합니다.
 		setSelectedConversationId(null);
-		setCurrentChatStatus('idle');
+		setCurrentChatStatus({
+			status: 'idle',
+			chat: null,
+		});
 	};
 
 	const onConversationHistoryClick = (conversation: Conversation) => {
 		setSelectedConversationId(conversation.id);
-		setCurrentChatStatus('idle');
 	};
 
 	return (
@@ -90,8 +201,14 @@ export default function ChatContainer() {
 			/>
 			<div className="flex-1 flex flex-col h-full overflow-hidden">
 				<ChatHeader />
-				<ChatList conversation={selectedConversation} />
-				<ChatBox onChatSubmit={handleChatSubmit} />
+				<ChatList
+					conversation={selectedConversation}
+					status={currentChatStatus}
+				/>
+				<ChatBox
+					onChatSubmit={handleChatSubmit}
+					disabled={currentChatStatus.status === 'loading'}
+				/>
 			</div>
 		</div>
 	);
