@@ -1,1 +1,7 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/* 스크롤바 스타일 적용 */
+body {
+	scrollbar-color: #424242 transparent;
+	scrollbar-gutter: stable both-edges;
+}

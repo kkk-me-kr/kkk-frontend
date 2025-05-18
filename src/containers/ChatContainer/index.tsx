@@ -193,7 +193,7 @@ export default function ChatContainer() {
 	};
 
 	return (
-		<div className="flex flex-row">
+		<div className="h-full w-full flex flex-row bg-[#323232]">
 			<ChatSideBar
 				conversations={conversations}
 				onNewConversationClick={onNewConversationClick}
