@@ -24,7 +24,7 @@ export default function ChatSideBar({
 			{open && (
 				<div
 					className={[
-						'inset-0 z-30 md:hidden',
+						'fixed inset-0 z-30 md:hidden',
 						'bg-black opacity-50',
 						'transition-opacity duration-300',
 					].join(' ')}
@@ -34,10 +34,10 @@ export default function ChatSideBar({
 			<div
 				className={[
 					'flex flex-col h-screen z-40',
-					'top-0 left-0 md:relative',
+					'top-0 left-0 fixed md:relative',
 					'text-[#ececf1]',
 					'transition-all duration-300',
-					open ? 'w-64' : 'md:w-24 w-12',
+					open ? 'w-64 bg-inherit' : 'md:w-24 w-12',
 					'overflow-x-hidden',
 				].join(' ')}
 			>
@@ -67,6 +67,7 @@ export default function ChatSideBar({
 						<button
 							onClick={() => {
 								onNewConversationClick?.();
+								setOpen(false);
 							}}
 							aria-label="새로운 대화"
 						>
@@ -89,6 +90,7 @@ export default function ChatSideBar({
 								key={conversation.id}
 								onClick={() => {
 									onConversationHistoryClick?.(conversation);
+									setOpen(false);
 								}}
 								className={[
 									'flex items-center w-full text-left px-3 py-2 rounded',
