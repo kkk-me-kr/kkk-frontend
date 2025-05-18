@@ -40,6 +40,12 @@ export default function ChatBox({
 						disabled ? 'cursor-not-allowed' : '',
 					].join(' ')}
 					contentEditable={!disabled}
+					onKeyDown={e => {
+						if (e.key === 'Enter') {
+							e.preventDefault();
+							handleSubmit();
+						}
+					}}
 					onPaste={e => {
 						e.preventDefault();
 						const text = e.clipboardData.getData('text/plain');

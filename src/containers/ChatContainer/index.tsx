@@ -11,6 +11,7 @@ import {
 	fetchChats,
 	sendUserChat,
 } from '@/services/client/conversation.service';
+import { v7 as uuidv7 } from 'uuid';
 
 const USER_ID_KEY = 'chat_user_id';
 
@@ -19,7 +20,7 @@ function getUserId(): string {
 	if (userId) return userId;
 
 	// 새 사용자 ID 생성 및 저장
-	const newUserId = crypto.randomUUID();
+	const newUserId = uuidv7();
 	localStorage.setItem(USER_ID_KEY, newUserId);
 	return newUserId;
 }
