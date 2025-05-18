@@ -22,14 +22,23 @@ export default function ChatBox({
 	};
 
 	return (
-		<div className="flex flex-2/12 flex-col p-4">
-			<div>
-				{/* 입력 폼 */}
+		<div className={['w-full flex flex-col', 'px-4 pb-4 pt-2'].join(' ')}>
+			<div
+				className={[
+					'flex items-end w-full gap-1',
+					'bg-[#303030] rounded-2xl',
+					'px-4 py-3',
+					disabled ? 'opacity-60' : '',
+				].join(' ')}
+			>
 				<div
 					ref={virtualInputRef}
-					className={`w-full min-h-[40px] max-h-[200px] p-2 border rounded-lg focus:outline-none whitespace-pre-wrap break-words overflow-y-scroll ${
-						disabled ? 'bg-gray-100 cursor-not-allowed' : ''
-					}`}
+					className={[
+						'flex-1 min-h-8 max-h-32',
+						'overflow-x-hidden overflow-y-scroll',
+						'bg-transparent text-[#ececf1] outline-none',
+						disabled ? 'cursor-not-allowed' : '',
+					].join(' ')}
 					contentEditable={!disabled}
 					onPaste={e => {
 						e.preventDefault();
@@ -40,16 +49,16 @@ export default function ChatBox({
 					aria-multiline="true"
 					tabIndex={0}
 				/>
-			</div>
-			<div className="mt-2">
 				<button
-					className={`px-4 py-2 rounded-lg ${
-						disabled
-							? 'bg-gray-400 cursor-not-allowed'
-							: 'bg-blue-500 hover:bg-blue-600'
-					} text-white`}
 					onClick={handleSubmit}
 					disabled={disabled}
+					className={[
+						'rounded-full px-4 py-2',
+						disabled
+							? 'bg-[#444] text-[#aaa] cursor-not-allowed'
+							: 'bg-[#40414f] text-[#ececf1] hover:bg-[#565869] cursor-pointer',
+						'font-semibold',
+					].join(' ')}
 				>
 					전송
 				</button>
