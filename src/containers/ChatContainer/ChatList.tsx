@@ -1,3 +1,7 @@
+import { Conversation } from '@/types';
+
+import { Chat } from '@/types';
+
 export default function ChatList({
 	conversation,
 	status,

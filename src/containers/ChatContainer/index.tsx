@@ -12,6 +12,7 @@ import {
 	sendUserChat,
 } from '@/services/client/conversation.service';
 import { v7 as uuidv7 } from 'uuid';
+import { Conversation, Chat } from '@/types';
 
 const USER_ID_KEY = 'chat_user_id';
 

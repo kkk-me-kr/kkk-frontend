@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import Image from 'next/image';
 import MenuIcon from '@/components/icons/Menu';
 import NewChatIcon from '@/components/icons/NewChat';
+import { Conversation } from '@/types';
+
 export default function ChatSideBar({
 	conversations,
 	onNewConversationClick,
