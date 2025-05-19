@@ -74,7 +74,10 @@ export default function ChatContainer() {
 		const loadChats = async () => {
 			if (!selectedConversationId) return;
 			try {
-				const response = await fetchChats(selectedConversationId);
+				const response = await fetchChats({
+					conversationId: selectedConversationId,
+					userId: getUserId(),
+				});
 				setConversations(prev =>
 					prev.map(conv =>
 						conv.id === selectedConversationId
@@ -116,7 +119,9 @@ export default function ChatContainer() {
 				if (!conversation) {
 					// 새 대화 생성
 					const userId = getUserId();
-					const response = await createConversation(userId);
+					const response = await createConversation({
+						userId,
+					});
 					conversation = {
 						id: response.id.toString(),
 						title: `${conversations.length + 1}번째 대화`,
@@ -126,7 +131,11 @@ export default function ChatContainer() {
 				}
 
 				// 서버에 메시지 전송
-				const response = await sendUserChat(conversation.id, message);
+				const response = await sendUserChat({
+					conversationId: conversation.id,
+					content: message,
+					userId: getUserId(),
+				});
 				resolve({
 					conversation,
 					userChat: response.userChat,

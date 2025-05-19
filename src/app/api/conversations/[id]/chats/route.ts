@@ -9,16 +9,20 @@ export async function GET(
 	{ params }: { params: Promise<{ id: string }> },
 ) {
 	try {
+		const userId = request.headers.get('x-user-id');
 		const { id: conversationId } = await params;
 
-		if (!conversationId) {
+		if (!conversationId || !userId) {
 			return NextResponse.json(
-				{ error: 'conversationId is required' },
+				{ error: 'conversationId and userId are required' },
 				{ status: 400 },
 			);
 		}
 
-		const turns = await fetchChats(conversationId);
+		const turns = await fetchChats({
+			conversationId,
+			userId,
+		});
 		const response = {
 			chats: [
 				...turns.map(turn => ({
@@ -32,13 +36,13 @@ export async function GET(
 				...turns.map(turn =>
 					turn.answer
 						? {
-								conversationId: turn.answer.conversationId.toString(),
-								turn: turn.answer.turn,
-								content: turn.answer.content,
-								subject: 'assistant' as const,
-								createdAt: new Date(turn.answer.createdAt),
-								updatedAt: new Date(turn.answer.updatedAt),
-							}
+							conversationId: turn.answer.conversationId.toString(),
+							turn: turn.answer.turn,
+							content: turn.answer.content,
+							subject: 'assistant' as const,
+							createdAt: new Date(turn.answer.createdAt),
+							updatedAt: new Date(turn.answer.updatedAt),
+						}
 						: null,
 				),
 			].sort((a, b) => (a?.turn ?? Infinity) - (b?.turn ?? Infinity)),
@@ -59,18 +63,23 @@ export async function POST(
 	{ params }: { params: Promise<{ id: string }> },
 ) {
 	try {
+		const userId = request.headers.get('x-user-id');
 		const { id: conversationId } = await params;
 		const body = await request.json();
 		const { content } = body;
 
-		if (!conversationId || !content) {
+		if (!conversationId || !content || !userId) {
 			return NextResponse.json(
-				{ error: 'conversationId and content are required' },
+				{ error: 'conversationId, content and userId are required' },
 				{ status: 400 },
 			);
 		}
 
-		const { question, answer } = await sendUserChat(conversationId, content);
+		const { question, answer } = await sendUserChat({
+			conversationId,
+			query: content,
+			userId,
+		});
 		const response = {
 			conversationId: question.conversationId.toString(),
 			userChat: {
@@ -82,12 +91,12 @@ export async function POST(
 			},
 			assistantChat: answer
 				? {
-						turn: answer.turn,
-						content: answer.content,
-						subject: 'assistant' as const,
-						createdAt: new Date(answer.createdAt),
-						updatedAt: new Date(answer.updatedAt),
-					}
+					turn: answer.turn,
+					content: answer.content,
+					subject: 'assistant' as const,
+					createdAt: new Date(answer.createdAt),
+					updatedAt: new Date(answer.updatedAt),
+				}
 				: null,
 		};
 

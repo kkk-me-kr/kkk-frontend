@@ -1,5 +1,7 @@
 import { fetchOnClient } from '../fetch.service';
 
+const HEADER_USER_ID = 'x-user-id';
+
 type FetchConversationsResponse = {
 	id: number;
 	userId: string;
@@ -44,24 +46,37 @@ export const fetchConversations = async (
 	userId: string,
 ): Promise<FetchConversationsResponse> => {
 	const response = await fetchOnClient({
-		path: `/api/conversations?userId=${userId}`,
+		path: `/api/conversations`,
+		headers: {
+			[HEADER_USER_ID]: userId,
+		},
 	});
 	return response;
 };
 
-export const fetchChats = async (
-	conversationId: string,
-): Promise<FetchChatsResponse> => {
+export const fetchChats = async ({
+	conversationId,
+	userId,
+}: {
+	conversationId: string;
+	userId: string;
+}): Promise<FetchChatsResponse> => {
 	const response = await fetchOnClient({
 		path: `/api/conversations/${conversationId}/chats`,
+		headers: {
+			[HEADER_USER_ID]: userId,
+		},
 	});
 	return response;
 };
 
-export const createConversation = async (
-	userId: string,
-	title?: string,
-): Promise<CreateConversationResponse> => {
+export const createConversation = async ({
+	userId,
+	title,
+}: {
+	userId: string;
+	title?: string;
+}): Promise<CreateConversationResponse> => {
 	const response = await fetchOnClient({
 		path: `/api/conversations`,
 		options: {
@@ -69,16 +84,22 @@ export const createConversation = async (
 		},
 		headers: {
 			'Content-Type': 'application/json',
+			[HEADER_USER_ID]: userId,
 		},
-		body: { userId, title },
+		body: { title },
 	});
 	return response;
 };
 
-export const sendUserChat = async (
-	conversationId: string,
-	content: string,
-): Promise<SendUserChatResponse> => {
+export const sendUserChat = async ({
+	conversationId,
+	content,
+	userId,
+}: {
+	conversationId: string;
+	content: string;
+	userId: string;
+}): Promise<SendUserChatResponse> => {
 	const response = await fetchOnClient({
 		path: `/api/conversations/${conversationId}/chats`,
 		options: {
@@ -86,6 +107,7 @@ export const sendUserChat = async (
 		},
 		headers: {
 			'Content-Type': 'application/json',
+			[HEADER_USER_ID]: userId,
 		},
 		body: { content },
 	});
